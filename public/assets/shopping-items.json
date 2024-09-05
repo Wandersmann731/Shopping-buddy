@@ -11,7 +11,7 @@
     "id": "2",
     "name": "Bread",
     "imageUrl": "",
-    "quantity": 1,
+    "quantity": 5,
     "category": "Bakery",
     "comment": "Whole grain, large loaf, no seeds"
   },
