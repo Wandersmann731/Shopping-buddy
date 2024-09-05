@@ -62,9 +62,6 @@ const [items, setItems] = useState(
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <StyledShoppingList>
