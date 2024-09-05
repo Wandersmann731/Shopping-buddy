@@ -48,35 +48,14 @@ const ItemCard = styled.div`
 `;
 
 const ShoppingList = () => {
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState({});
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const [itemsResponse, categoriesResponse] = await Promise.all([
-        fetch("/assets/shopping-items.json"),
-        fetch("/assets/categories.json"),
-      ]);
-
-      if (itemsResponse.ok && categoriesResponse.ok) {
-        let itemsData = await itemsResponse.json();
-        const categoriesData = await categoriesResponse.json();
-
-        itemsData = itemsData.map((item, index) => ({
-          ...item,
-          id: `item-${index + 1}`,
-          category: item.category.toLowerCase(),
-        }));
-
-        setItems(itemsData);
-        setCategories(categoriesData);
-      }
-      setLoading(false);
-    };
-
-    fetchData();
-  }, []);
+const [items, setItems] = useState(
+    initialItems.map((item, index) => ({
+      ...item,
+      id: `item-${index + 1}`,
+      category: item.category.toLowerCase(),
+    }))
+  );
+  const [categories, setCategories] = useState(initialCategories);
 
   const getTotalItems = () => {
     return items.reduce((total, item) => total + item.quantity, 0);
