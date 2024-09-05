@@ -58,9 +58,7 @@ const [items, setItems] = useState(
   );
   const [categories, setCategories] = useState(initialCategories);
 
-  const getTotalItems = () => {
-    return items.reduce((total, item) => total + item.quantity, 0);
-  };
+const totalItems = items.reduce((total, item) => total + item.quantity, 0);
 
 
   return (
