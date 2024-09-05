@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-
+import initialCategories from "@/public/assets/categories.json";
+import initialItems from "@/public/assets/shopping-items.json";
 const StyledShoppingList = styled.div`
   max-width: 800px;
   margin: 0 auto;
