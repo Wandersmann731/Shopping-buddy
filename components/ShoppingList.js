@@ -64,7 +64,7 @@ const totalItems = items.reduce((total, item) => total + item.quantity, 0);
   return (
     <StyledShoppingList>
       <h1>Shopping List: What I Need to Buy</h1>
-      <p>Total items: {getTotalItems()}</p>
+      <p>Total items: {totalItems}</p>
       <div className="items-container">
         {items.map((item) => (
           <ItemCard key={item.id} category={item.category}>
