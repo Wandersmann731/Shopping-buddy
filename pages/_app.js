@@ -1,12 +1,12 @@
 import React from "react";
-import ShoppingList from "@/components/ShoppingList";
+import ShoppingList from "./index";
 
-function App() {
+const Home = () => {
   return (
-    <div className="App">
+    <div>
       <ShoppingList />
     </div>
   );
-}
+};
 
-export default App;
+export default Home;
