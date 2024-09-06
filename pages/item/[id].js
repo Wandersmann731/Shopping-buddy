@@ -39,9 +39,9 @@ const ItemDetails = () => {
 
   return (
     <StyledItemDetails>
-      {/* <a className="back-link" href="/">
+      <Link className="back-link" href="/">
         ← Back to Shopping List
-      </a> */}
+      </Link>
       <h1>{item.name}</h1>
       <img
         src={item.imageUrl || "https://via.placeholder.com/600x400"}
