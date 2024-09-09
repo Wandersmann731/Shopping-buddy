@@ -76,7 +76,7 @@ const ItemDetails = () => {
     <StyledItemDetails>
       <StyledLink href="/">← Back to Shopping List</StyledLink>
       <h1>{item.name}</h1>
-      <img
+      <imgage
         src={item.imageUrl || "https://via.placeholder.com/600x400"}
         alt={item.name}
       />
