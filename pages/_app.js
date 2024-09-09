@@ -1,12 +1,11 @@
 import React from "react";
-import ShoppingList from "@/components/ShoppingList";
+import GlobalStyle from "../styles";
 
-function App() {
+export default function App({ Component, pageProps }) {
   return (
-    <div className="App">
-      <ShoppingList />
-    </div>
+    <>
+      <GlobalStyle />
+      <Component {...pageProps} />
+    </>
   );
 }
-
-export default App;
