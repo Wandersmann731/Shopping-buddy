@@ -3,7 +3,6 @@ import { useRouter } from "next/router";
 import styled from "styled-components";
 import initialCategories from "@/public/assets/categories.json";
 import Link from "next/link";
-import Image from "next/image";
 
 const StyledItemDetails = styled.div`
   max-width: 600px;
@@ -15,16 +14,6 @@ const StyledItemDetails = styled.div`
     height: auto;
     border-radius: 5px;
   }
-
-  .back-link {
-    display: inline-block;
-    margin-bottom: 20px;
-    text-decoration: none;
-    color: #007bff;
-    &:hover {
-      text-decoration: underline;
-    }
-  }
 `;
 
 const ItemDetailContainer = styled.div`
@@ -34,6 +23,7 @@ const ItemDetailContainer = styled.div`
   border: 1px solid #ccc;
   border-radius: 8px;
 `;
+
 const StyledLink = styled(Link)`
   display: inline-block;
   margin-bottom: 20px;
@@ -54,12 +44,7 @@ const ItemDetails = () => {
       const storedItems =
         JSON.parse(localStorage.getItem("shoppingItems")) || [];
       const foundItem = storedItems.find((item) => item.id === id);
-
-      if (foundItem) {
-        setItem(foundItem);
-      } else {
-        setItem(null);
-      }
+      setItem(foundItem || null);
     }
   }, [id]);
 
@@ -68,6 +53,7 @@ const ItemDetails = () => {
       <ItemDetailContainer>
         <h2>Item not found</h2>
         <p>The item you are looking for does not exist.</p>
+        <StyledLink href="/">← Back to Shopping List</StyledLink>
       </ItemDetailContainer>
     );
   }
@@ -76,9 +62,11 @@ const ItemDetails = () => {
     <StyledItemDetails>
       <StyledLink href="/">← Back to Shopping List</StyledLink>
       <h1>{item.name}</h1>
-      <imgage
+      <img
         src={item.imageUrl || "https://via.placeholder.com/600x400"}
         alt={item.name}
+        width={600}
+        height={400}
       />
       <p>Quantity: {item.quantity}</p>
       <p>
