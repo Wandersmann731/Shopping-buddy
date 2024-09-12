@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Link from "next/link";
 import initialItems from "@/public/assets/shopping-items.json";
 import categories from "@/public/assets/categories.json";
+import { nanoid } from "nanoid";
 
 const StyledShoppingList = styled.div`
   max-width: 800px;
@@ -15,6 +16,13 @@ const StyledShoppingList = styled.div`
     border: 1px solid #ccc;
     padding: 10px;
   }
+`;
+
+const ItemDetailContainer = styled.div`
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
 `;
 
 const ErrorMessage = styled.div`
@@ -68,27 +76,27 @@ const ItemCard = styled.div`
   background-color: ${({ category }) => {
     switch (category) {
       case "fruits":
-        return "#3bff4b";
+        return "#79a17d";
       case "bakery":
-        return "#b06100";
+        return "#d4a76a";
       case "dairy":
-        return "#7a7fff";
+        return "#7c9fb0";
       case "vegetables":
-        return "#009900";
+        return "#c07676";
       case "meat":
-        return "#FFCDD2";
+        return "#9d8bb5";
       case "beverage":
-        return "#ff7f7f";
+        return "#a0877d";
       case "snacks":
-        return "#009900";
+        return "#c299b0";
       case "household":
-        return "#d97ae6";
+        return "#999999";
       case "personal care":
-        return "#d48208";
+        return "#b1b179";
       case "other":
         return "#fc9997";
       default:
-        return "#E0E0E0";
+        return "#7ca6a6";
     }
   }};
 
@@ -136,6 +144,36 @@ const FormContainer = styled.form`
   }
 `;
 
+const DeleteButton = styled.button`
+  background-color: #007bff;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #0056b3;
+  }
+`;
+
+const ConfirmationDialog = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  text-align: center;
+
+  button {
+    margin: 10px;
+  }
+`;
+
 function useLocalStorageState(key, defaultValue) {
   const [state, setState] = useState(defaultValue);
 
@@ -159,8 +197,8 @@ function useLocalStorageState(key, defaultValue) {
 
 const ShoppingList = () => {
   const [items, setItems] = useLocalStorageState("shoppingItems", []);
-
   const [errors, setErrors] = useState({});
+  const [deletingItemId, setDeletingItemId] = useState(null);
 
   useEffect(() => {
     if (items.length === 0) {
@@ -170,7 +208,7 @@ const ShoppingList = () => {
       }));
       setItems(processedItems);
     }
-  }, [items.length, setItems]);
+  }, []);
 
   const handleFormData = (form) => {
     const formData = new FormData(form);
@@ -192,10 +230,7 @@ const ShoppingList = () => {
   };
 
   const updateItemsState = (newItem) => {
-    const updatedItems = [
-      { ...newItem, id: new Date().getTime().toString() },
-      ...items,
-    ];
+    const updatedItems = [{ ...newItem, id: nanoid() }, ...items];
     setItems(updatedItems);
   };
 
@@ -211,13 +246,26 @@ const ShoppingList = () => {
     }
   };
 
+  const handleDelete = (id) => {
+    setDeletingItemId(id);
+  };
+
+  const confirmDelete = () => {
+    setItems(items.filter((item) => item.id !== deletingItemId));
+    setDeletingItemId(null);
+  };
+
+  const cancelDelete = () => {
+    setDeletingItemId(null);
+  };
+
   const totalItems = items.reduce((total, item) => total + item.quantity, 0);
 
   return (
     <StyledShoppingList>
       <h1>Shopping List: What I Need to Buy</h1>
 
-      <FormContainer onSubmit={handleSubmit}>
+      <FormContainer onSubmit={handleSubmit} id="add-item-form">
         <h2>Add New Shopping Item</h2>
 
         {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
@@ -245,24 +293,42 @@ const ShoppingList = () => {
         <Button type="submit">Add Item</Button>
       </FormContainer>
 
-      <p>Total items: {totalItems}</p>
-      <div className="items-container">
-        {items.map((item) => (
-          <Link key={item.id} href={`/item/${item.id}`} passHref>
-            <ItemCard category={item.category}>
-              <h3>{item.name}</h3>
-              <p>Quantity: {item.quantity}</p>
-              <p>
-                Category:{" "}
-                {categories.find(
-                  (cat) => cat.toLowerCase() === item.category
-                ) || item.category}
-              </p>
-              {item.comment && <p>Comment: {item.comment}</p>}
-            </ItemCard>
-          </Link>
-        ))}
-      </div>
+      {totalItems === 0 ? (
+        <div>No shopping items. </div>
+      ) : (
+        <>
+          <p>Total items: {totalItems}</p>
+          <ItemDetailContainer>
+            {items.map((item) => (
+              <ItemCard key={item.id} category={item.category}>
+                <Link key={item.id} href={`/item/${item.id}`} passHref>
+                  <div>
+                    <h3>{item.name}</h3>
+                    <p>Quantity: {item.quantity}</p>
+                    <p>
+                      Category:{" "}
+                      {categories.find(
+                        (cat) => cat.toLowerCase() === item.category
+                      ) || item.category}
+                    </p>
+                  </div>
+                </Link>
+                <DeleteButton onClick={(e) => handleDelete(item.id, e)}>
+                  Delete
+                </DeleteButton>
+              </ItemCard>
+            ))}
+          </ItemDetailContainer>
+        </>
+      )}
+
+      {deletingItemId && (
+        <ConfirmationDialog>
+          <p>Are you sure you want to delete this item?</p>
+          <Button onClick={confirmDelete}>Yes, delete</Button>
+          <Button onClick={cancelDelete}>Cancel</Button>
+        </ConfirmationDialog>
+      )}
     </StyledShoppingList>
   );
 };
