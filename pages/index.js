@@ -4,6 +4,7 @@ import Link from "next/link";
 import initialItems from "@/public/assets/shopping-items.json";
 import categories from "@/public/assets/categories.json";
 import { nanoid } from "nanoid";
+import useLocalStorageState from "use-local-storage-state";
 
 const StyledShoppingList = styled.div`
   max-width: 800px;
@@ -15,6 +16,23 @@ const StyledShoppingList = styled.div`
     overflow-y: auto;
     border: 1px solid #ccc;
     padding: 10px;
+  }
+`;
+
+const PurchasedItemsContainer = styled.div`
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-top: 20px;
+
+  h2 {
+    color: grey;
+  }
+
+  .purchased-item {
+    text-decoration: line-through;
+    color: grey;
   }
 `;
 
@@ -174,34 +192,43 @@ const ConfirmationDialog = styled.div`
   }
 `;
 
-function useLocalStorageState(key, defaultValue) {
-  const [state, setState] = useState(defaultValue);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const storedValue = localStorage.getItem(key);
-      if (storedValue) {
-        setState(JSON.parse(storedValue));
-      }
-    }
-  }, [key]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(key, JSON.stringify(state));
-    }
-  }, [key, state]);
-
-  return [state, setState];
-}
-
 const ShoppingList = () => {
   const [items, setItems] = useLocalStorageState("shoppingItems", []);
+  const [purchasedItems, setPurchasedItems] = useLocalStorageState(
+    "purchasedItems",
+    []
+  );
   const [errors, setErrors] = useState({});
   const [deletingItemId, setDeletingItemId] = useState(null);
 
+  const totalItems = (items || []).reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+
+  const TotalPurchased = (purchasedItems || []).reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+  const handleCheckboxClick = (itemId) => {
+    const item = items.find((item) => item.id === itemId);
+    if (item) {
+      const purchasedItem = { ...item, purchased: true };
+      setPurchasedItems([purchasedItem, ...(purchasedItems || [])]);
+      setItems(items.filter((item) => item.id !== itemId));
+    }
+  };
+  const handleUnmarkClick = (itemId) => {
+    const purchasedItem = purchasedItems.find((item) => item.id === itemId);
+    if (purchasedItem) {
+      const item = { ...purchasedItem, purchased: false };
+      setItems([item, ...(items || [])]);
+      setPurchasedItems(purchasedItems.filter((item) => item.id !== itemId));
+    }
+  };
+
   useEffect(() => {
-    if (items.length === 0) {
+    if ((items || []).length === 0) {
       const processedItems = initialItems.map((item) => ({
         ...item,
         category: item.category.toLowerCase(),
@@ -259,8 +286,6 @@ const ShoppingList = () => {
     setDeletingItemId(null);
   };
 
-  const totalItems = items.reduce((total, item) => total + item.quantity, 0);
-
   return (
     <StyledShoppingList>
       <h1>Shopping List: What I Need to Buy</h1>
@@ -292,15 +317,22 @@ const ShoppingList = () => {
 
         <Button type="submit">Add Item</Button>
       </FormContainer>
-
-      {totalItems === 0 ? (
-        <div>No shopping items. </div>
+      {totalItems === 0 && TotalPurchased > 0 && (
+        <div>All items have been purchased!</div>
+      )}
+      {totalItems === 0 && TotalPurchased === 0 ? (
+        <div>No shopping items. Add some items to get started.</div>
       ) : (
         <>
           <p>Total items: {totalItems}</p>
           <ItemDetailContainer>
             {items.map((item) => (
               <ItemCard key={item.id} category={item.category}>
+                <input
+                  type="checkbox"
+                  checked={item.purchased || false}
+                  onChange={() => handleCheckboxClick(item.id)}
+                />
                 <Link key={item.id} href={`/item/${item.id}`} passHref>
                   <div>
                     <h3>{item.name}</h3>
@@ -313,15 +345,40 @@ const ShoppingList = () => {
                     </p>
                   </div>
                 </Link>
-                <DeleteButton onClick={(e) => handleDelete(item.id, e)}>
+                <DeleteButton onClick={() => handleDelete(item.id)}>
                   Delete
                 </DeleteButton>
               </ItemCard>
             ))}
           </ItemDetailContainer>
+
+          {TotalPurchased > 0 && (
+            <PurchasedItemsContainer>
+              <h2>Purchased Items</h2>
+              <p>Total purchased items: {TotalPurchased}</p>
+              {purchasedItems.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  category={item.category}
+                  className="purchased-item"
+                >
+                  <input
+                    type="checkbox"
+                    checked={item.purchased || false}
+                    onChange={() => handleUnmarkClick(item.id)}
+                  />
+                  <div>
+                    <h3 style={{ textDecoration: "line-through" }}>
+                      {item.name}
+                    </h3>
+                    <p>Quantity: {item.quantity}</p>
+                  </div>
+                </ItemCard>
+              ))}
+            </PurchasedItemsContainer>
+          )}
         </>
       )}
-
       {deletingItemId && (
         <ConfirmationDialog>
           <p>Are you sure you want to delete this item?</p>
