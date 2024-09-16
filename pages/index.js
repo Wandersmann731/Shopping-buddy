@@ -19,6 +19,20 @@ const StyledShoppingList = styled.div`
   }
 `;
 
+const EditButton = styled.button`
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+
+  &:hover {
+    background-color: #0056b3;
+  }
+`;
+
 const PurchasedItemsContainer = styled.div`
   max-height: 300px;
   overflow-y: auto;
@@ -73,10 +87,11 @@ const Select = styled.select`
 const Button = styled.button`
   background-color: #007bff;
   color: white;
-  padding: 10px 15px;
+  padding: 10px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  margin 10px;
 
   &:hover {
     background-color: #0056b3;
@@ -144,12 +159,13 @@ const FormContainer = styled.form`
   }
 
   button {
-    padding: 10px 20px;
+    padding: 10px;
     background-color: #007bff;
     color: white;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    margin: 10px;
 
     &:hover {
       background-color: #0056b3;
@@ -165,10 +181,11 @@ const FormContainer = styled.form`
 const DeleteButton = styled.button`
   background-color: #007bff;
   color: white;
-  padding: 10px 15px;
+  padding: 10px ;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  margin 10px;
 
   &:hover {
     background-color: #0056b3;
@@ -200,6 +217,8 @@ const ShoppingList = () => {
   );
   const [errors, setErrors] = useState({});
   const [deletingItemId, setDeletingItemId] = useState(null);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
 
   const totalItems = (items || []).reduce(
     (total, item) => total + item.quantity,
@@ -210,6 +229,7 @@ const ShoppingList = () => {
     (total, item) => total + item.quantity,
     0
   );
+
   const handleCheckboxClick = (itemId) => {
     const item = items.find((item) => item.id === itemId);
     if (item) {
@@ -218,6 +238,7 @@ const ShoppingList = () => {
       setItems(items.filter((item) => item.id !== itemId));
     }
   };
+
   const handleUnmarkClick = (itemId) => {
     const purchasedItem = purchasedItems.find((item) => item.id === itemId);
     if (purchasedItem) {
@@ -261,6 +282,10 @@ const ShoppingList = () => {
     setItems(updatedItems);
   };
 
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setIsFormVisible(true);
+  };
   const handleSubmit = (e) => {
     e.preventDefault();
     const { newItem, formErrors } = handleFormData(e.target);
@@ -268,8 +293,17 @@ const ShoppingList = () => {
       setErrors(formErrors);
     } else {
       setErrors({});
-      updateItemsState(newItem);
+      if (editingItem) {
+        const updatedItems = items.map((item) =>
+          item.id === editingItem.id ? { ...newItem, id: item.id } : item
+        );
+        setItems(updatedItems);
+        setEditingItem(null);
+      } else {
+        updateItemsState(newItem);
+      }
       e.target.reset();
+      setIsFormVisible(false);
     }
   };
 
@@ -286,37 +320,81 @@ const ShoppingList = () => {
     setDeletingItemId(null);
   };
 
+  // const toggleFormVisibility = () => {
+  //   setIsFormVisible((prev) => !prev);
+  // };
+
+  const handleCancel = (e) => {
+    e.preventDefault();
+    setIsFormVisible(false);
+    e.target.closest("form").reset();
+  };
+
   return (
     <StyledShoppingList>
       <h1>Shopping List: What I Need to Buy</h1>
 
-      <FormContainer onSubmit={handleSubmit} id="add-item-form">
-        <h2>Add New Shopping Item</h2>
+      {!isFormVisible && (
+        <Button
+          onClick={() => {
+            setEditingItem(null);
+            setIsFormVisible(true);
+          }}
+        >
+          Add New Item
+        </Button>
+      )}
 
-        {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
-        <Label htmlFor="name">Item Name</Label>
-        <Input type="text" id="name" name="name" />
+      {isFormVisible && (
+        <FormContainer onSubmit={handleSubmit} id="add-item-form">
+          <h2>
+            {editingItem ? "Edit Shopping Item" : "Add New Shopping Item"}
+          </h2>
+          {errors.name && <ErrorMessage>{errors.name}</ErrorMessage>}
+          <Label htmlFor="name">Item Name</Label>
+          <Input
+            type="text"
+            id="name"
+            name="name"
+            defaultValue={editingItem?.name || ""}
+          />
+          {errors.quantity && <ErrorMessage>{errors.quantity}</ErrorMessage>}
+          <Label htmlFor="quantity">Quantity</Label>
+          <Input
+            type="number"
+            id="quantity"
+            name="quantity"
+            defaultValue={editingItem?.quantity || ""}
+          />
+          {errors.category && <ErrorMessage>{errors.category}</ErrorMessage>}
+          <Label htmlFor="category">Category</Label>
+          <Select
+            id="category"
+            name="category"
+            defaultValue={editingItem?.category || "default"}
+          >
+            <option value="default">Please select a category</option>
+            {categories.map((category) => (
+              <option key={category} value={category.toLowerCase()}>
+                {category}
+              </option>
+            ))}
+          </Select>
+          <Label htmlFor="comment">Comment</Label>
+          <Input
+            type="text"
+            id="comment"
+            name="comment"
+            placeholder="Optional"
+            defaultValue={editingItem?.comment || ""}
+          />
+          <EditButton type="submit">
+            {editingItem ? "Save Changes" : "Add Item"}
+          </EditButton>
+          <Button onClick={handleCancel}>Cancel</Button>
+        </FormContainer>
+      )}
 
-        {errors.quantity && <ErrorMessage>{errors.quantity}</ErrorMessage>}
-        <Label htmlFor="quantity">Quantity</Label>
-        <Input type="number" id="quantity" name="quantity" />
-
-        {errors.category && <ErrorMessage>{errors.category}</ErrorMessage>}
-        <Label htmlFor="category">Category</Label>
-        <Select id="category" name="category">
-          <option value="default">Please select a category</option>
-          {categories.map((category) => (
-            <option key={category} value={category.toLowerCase()}>
-              {category}
-            </option>
-          ))}
-        </Select>
-
-        <Label htmlFor="comment">Comment</Label>
-        <Input type="text" id="comment" name="comment" placeholder="Optional" />
-
-        <Button type="submit">Add Item</Button>
-      </FormContainer>
       {totalItems === 0 && TotalPurchased > 0 && (
         <div>All items have been purchased!</div>
       )}
@@ -345,6 +423,7 @@ const ShoppingList = () => {
                     </p>
                   </div>
                 </Link>
+                <EditButton onClick={() => handleEdit(item)}>Edit</EditButton>
                 <DeleteButton onClick={() => handleDelete(item.id)}>
                   Delete
                 </DeleteButton>
@@ -379,6 +458,7 @@ const ShoppingList = () => {
           )}
         </>
       )}
+
       {deletingItemId && (
         <ConfirmationDialog>
           <p>Are you sure you want to delete this item?</p>
