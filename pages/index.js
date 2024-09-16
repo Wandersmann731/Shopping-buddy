@@ -91,7 +91,7 @@ const Button = styled.button`
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  margin 10px;
+  margin: 10px;
 
   &:hover {
     background-color: #0056b3;
@@ -181,11 +181,11 @@ const FormContainer = styled.form`
 const DeleteButton = styled.button`
   background-color: #007bff;
   color: white;
-  padding: 10px ;
+  padding: 10px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  margin 10px;
+  margin: 10px;
 
   &:hover {
     background-color: #0056b3;
@@ -320,16 +320,6 @@ const ShoppingList = () => {
     setDeletingItemId(null);
   };
 
-  // const toggleFormVisibility = () => {
-  //   setIsFormVisible((prev) => !prev);
-  // };
-
-  const handleCancel = (e) => {
-    e.preventDefault();
-    setIsFormVisible(false);
-    e.target.closest("form").reset();
-  };
-
   return (
     <StyledShoppingList>
       <h1>Shopping List: What I Need to Buy</h1>
@@ -391,7 +381,9 @@ const ShoppingList = () => {
           <EditButton type="submit">
             {editingItem ? "Save Changes" : "Add Item"}
           </EditButton>
-          <Button onClick={handleCancel}>Cancel</Button>
+          <Button type="reset" onClick={() => setIsFormVisible(false)}>
+            Cancel
+          </Button>
         </FormContainer>
       )}
 
