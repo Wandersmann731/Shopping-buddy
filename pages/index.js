@@ -1,65 +1,57 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import initialItems from "@/public/assets/shopping-items.json";
 import categories from "@/public/assets/categories.json";
 import useLocalStorageState from "use-local-storage-state";
-import {
-  StyledButton,
-  StyledButtonContainer,
-  StyledConfirmationDialog,
-  StyledErrorMessage,
-  StyledInput,
-  StyledLabel,
-  StyledShoppingList,
-  StyledSelect,
-  StyledFormContainer,
-  StyledItemCard,
-  StyledItemDetailContainer,
-} from "@/components/StyledComponents";
-import {
-  handleFormData,
-  updateItemsState,
-  scrollToPurchasedItems,
-  handleCheckboxClick,
-  handleUnmarkClick,
-} from "@/components/functions";
+import { scrollTo } from "@/utils/scrollTo";
+import { handleFormData } from "@/utils/validateForm";
+import { nanoid } from "nanoid";
 
-function ShoppingList() {
-  const [items, setItems] = useLocalStorageState("shoppingItems", []);
-  const [purchasedItems, setPurchasedItems] = useLocalStorageState(
-    "purchasedItems",
-    []
-  );
+import { StyledFormContainer } from "@/StyledComponents/StyledFormContainer";
+
+import {
+  StyledButtonContainer,
+  StyledButton,
+} from "@/StyledComponents/StyledButtons";
+
+import {
+  StyledLabel,
+  StyledInput,
+  StyledSelect,
+} from "@/StyledComponents/StyledForms";
+
+import { StyledItemCard } from "@/StyledComponents/StyledItemCard";
+
+import {
+  StyledItemDetailContainer,
+  StyledShoppingList,
+} from "@/StyledComponents/StyledItems";
+
+import {
+  StyledConfirmationMessage,
+  StyledErrorMessage,
+} from "@/StyledComponents/StyledMessages";
+
+export default function ShoppingList() {
+  const [items, setItems] = useLocalStorageState("shoppingItems", {
+    defaultValue: initialItems.map((item) => ({
+      ...item,
+      category: item.category.toLowerCase(),
+    })),
+  });
+
   const [errors, setErrors] = useState({});
   const [deletingItemId, setDeletingItemId] = useState(null);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
 
+  const topRef = useRef(null);
+  const purchasedItemsRef = useRef(null);
+
   const totalItems = (items || []).reduce(
     (total, item) => total + item.quantity,
     0
   );
-
-  const topRef = useRef(null);
-
-  function scrollToTop() {
-    topRef.current?.scrollIntoView({ behavior: "smooth" });
-  }
-
-  const TotalPurchased = (purchasedItems || []).reduce(
-    (total, item) => total + item.quantity,
-    0
-  );
-
-  useEffect(() => {
-    if ((items || []).length === 0) {
-      const processedItems = initialItems.map((item) => ({
-        ...item,
-        category: item.category.toLowerCase(),
-      }));
-      setItems(processedItems);
-    }
-  }, []);
 
   function handleEdit(item) {
     setEditingItem(item);
@@ -82,7 +74,7 @@ function ShoppingList() {
         setItems(updatedItems);
         setEditingItem(null);
       } else {
-        setItems(updateItemsState(newItem, items));
+        setItems([{ ...newItem, id: nanoid() }, ...items]);
       }
       e.target.reset();
       setIsFormVisible(false);
@@ -102,9 +94,31 @@ function ShoppingList() {
     setDeletingItemId(null);
   }
 
+  function toggleMarkAsPurchased(id) {
+    setItems(
+      items.map((item) => {
+        if (id === item.id) {
+          return { ...item, isPurchased: !item.isPurchased };
+        } else {
+          return item;
+        }
+      })
+    );
+  }
+
+  const purchasedItems = items.filter((item) => item.isPurchased);
+
+  const totalPurchased = (purchasedItems || []).reduce(
+    (total, item) => total + item.quantity,
+    0
+  );
+
+  const nonPurchasedItems = items.filter((item) => !item.isPurchased);
+
   return (
     <StyledShoppingList>
       <div ref={topRef}></div>
+
       <h1>Shopping List: What I Need to Buy</h1>
 
       {!isFormVisible && (
@@ -118,9 +132,9 @@ function ShoppingList() {
             Add New Item
           </StyledButton>
 
-          {TotalPurchased > 0 && (
-            <StyledButton onClick={scrollToPurchasedItems}>
-              Purchased Items ({TotalPurchased})
+          {totalPurchased > 0 && (
+            <StyledButton onClick={() => scrollTo(purchasedItemsRef)}>
+              Purchased Items ({totalPurchased})
             </StyledButton>
           )}
         </StyledButtonContainer>
@@ -184,16 +198,16 @@ function ShoppingList() {
         </StyledFormContainer>
       )}
 
-      {totalItems === 0 && TotalPurchased > 0 && (
+      {totalItems === 0 && totalPurchased > 0 && (
         <div>All items have been purchased!</div>
       )}
-      {totalItems === 0 && TotalPurchased === 0 ? (
+      {totalItems === 0 && totalPurchased === 0 ? (
         <div>No shopping items. Add some items to get started.</div>
       ) : (
         <>
           <p>Total items: {totalItems}</p>
           <StyledItemDetailContainer>
-            {items.map((item) => (
+            {nonPurchasedItems.map((item) => (
               <StyledItemCard key={item.id} category={item.category}>
                 <Link key={item.id} href={`/item/${item.id}`} passHref>
                   <div>
@@ -207,35 +221,36 @@ function ShoppingList() {
                     </p>
                   </div>
                 </Link>
-                <StyledButton onClick={() => handleEdit(item)}>
+                <StyledButton
+                  onClick={() =>
+                    handleEdit(item, setEditingItem, setIsFormVisible)
+                  }
+                >
                   Edit
                 </StyledButton>
-                <StyledButton onClick={() => handleDelete(item.id)}>
+                <StyledButton
+                  onClick={() => handleDelete(item.id, setDeletingItemId)}
+                >
                   Delete
                 </StyledButton>
                 <input
                   type="checkbox"
                   title="Click to mark as purchased"
-                  checked={item.purchased || false}
-                  onChange={() =>
-                    handleCheckboxClick(
-                      item.id,
-                      items,
-                      purchasedItems,
-                      setItems,
-                      setPurchasedItems
-                    )
-                  }
+                  checked={item.isPurchased || false}
+                  onChange={() => toggleMarkAsPurchased(item.id)}
                 />
                 Click to mark as purchased
               </StyledItemCard>
             ))}
 
-            {TotalPurchased > 0 && (
-              <div id="purchased-items">
+            {totalPurchased > 0 && (
+              <div ref={purchasedItemsRef}>
                 <h2>Purchased Items</h2>
-                <StyledButton onClick={scrollToTop}>Back to Top</StyledButton>
-                <p>Total purchased items: {TotalPurchased}</p>
+
+                <StyledButton onClick={() => scrollTo(topRef)}>
+                  Back to Top
+                </StyledButton>
+                <p>Total purchased items: {totalPurchased}</p>
                 {purchasedItems.map((item) => (
                   <StyledItemCard
                     key={item.id}
@@ -250,16 +265,8 @@ function ShoppingList() {
                     </div>
                     <input
                       type="checkbox"
-                      checked={item.purchased || false}
-                      onChange={() =>
-                        handleUnmarkClick(
-                          item.id,
-                          items,
-                          purchasedItems,
-                          setItems,
-                          setPurchasedItems
-                        )
-                      }
+                      checked={item.isPurchased || false}
+                      onChange={() => toggleMarkAsPurchased(item.id)}
                     />
                     Click again to unmark
                   </StyledItemCard>
@@ -271,14 +278,20 @@ function ShoppingList() {
       )}
 
       {deletingItemId && (
-        <StyledConfirmationDialog>
+        <StyledConfirmationMessage>
           <p>Are you sure you want to delete this item?</p>
-          <StyledButton onClick={confirmDelete}>Yes, delete</StyledButton>
-          <StyledButton onClick={cancelDelete}>Cancel</StyledButton>
-        </StyledConfirmationDialog>
+          <StyledButton
+            onClick={() =>
+              confirmDelete(items, deletingItemId, setItems, setDeletingItemId)
+            }
+          >
+            Yes, delete
+          </StyledButton>
+          <StyledButton onClick={() => cancelDelete(setDeletingItemId)}>
+            Cancel
+          </StyledButton>
+        </StyledConfirmationMessage>
       )}
     </StyledShoppingList>
   );
 }
-
-export default ShoppingList;
